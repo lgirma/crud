@@ -1,4 +1,4 @@
-module crud
+module github.com/lgirma/crud
 
 go 1.18
 
