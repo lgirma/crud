@@ -64,7 +64,7 @@ func TestCountWhere(t *testing.T) {
 
 func TestCountQuery(t *testing.T) {
 	create_and_populate_test_db(30)
-	result, err := contactsService.CountQuery("full_name LIKE ?", "Cont-1%")
+	result, err := contactsService.CountByQuery("full_name LIKE ?", "Cont-1%")
 	assert.Equal(t, 11, result)
 	assert.Nil(t, err)
 }

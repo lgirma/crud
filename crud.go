@@ -14,7 +14,7 @@ type CrudService[T any] interface {
 	FindOneByQuery(query string, paramValues ...any) (*T, error)
 
 	Count() int
-	CountQuery(query string, paramValues ...any) (int, error)
+	CountByQuery(query string, paramValues ...any) (int, error)
 	CountWhere(criteria *T) (int, error)
 
 	CreateAll(entities []T) ([]T, error)
@@ -98,7 +98,7 @@ func (service *CrudServiceImpl[T]) FindByQuery(filter *DataFilter, query string,
 		Limit(filter.ItemsPerPage).
 		Offset(filter.CurrentPage * filter.ItemsPerPage).
 		Find(&resultList)
-	totalCount, err := service.CountQuery(query, paramValues...)
+	totalCount, err := service.CountByQuery(query, paramValues...)
 	if db_result.Error != nil {
 		return nil, db_result.Error
 	}
@@ -138,7 +138,7 @@ func (service *CrudServiceImpl[T]) Count() int {
 	return int(result)
 }
 
-func (service *CrudServiceImpl[T]) CountQuery(query string, paramValues ...any) (int, error) {
+func (service *CrudServiceImpl[T]) CountByQuery(query string, paramValues ...any) (int, error) {
 	var result int64
 	var model T
 	db_result := service._db.Model(&model).Where(query, paramValues...).Count(&result)
