@@ -126,6 +126,13 @@ for i := range entities {
 contactRepo.UpdateAll(entities)
 ```
 
+To do bulk updates using queries, use `UpdateWhere()` as:
+
+```go
+// Equivalent to: UPDATE contacts SET Code = 5 WHERE full_name like 'J%'
+rowsAffected, err := contactRepo.UpdateWhere(&Contact{Code: 5}, "full_name like ?", "J%")
+```
+
 ### Delete
 
 To delete entities using criteria, use `Delete()` or `DeleteWhere()` as follows:

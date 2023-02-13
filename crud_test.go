@@ -255,3 +255,15 @@ func TestUpdate(t *testing.T) {
 
 	assert.Equal(t, "Cont-10_updated", entityAfterUpdate.FullName)
 }
+
+func TestUpdateWhere(t *testing.T) {
+	create_and_populate_test_db(30)
+	rowsAffected, err := contactsService.UpdateWhere(&TestContact{Code: 5}, "full_name like ?", "Cont-1%")
+
+	assert.Nil(t, err)
+	assert.Equal(t, 11, rowsAffected)
+
+	var items []TestContact
+	crud_test_db.Model(&TestContact{}).Where("full_name like ?", "Cont-1%").Find(&items)
+	assert.Equal(t, 5, items[0].Code)
+}

@@ -23,8 +23,9 @@ type CrudService[T any] interface {
 	Delete(criteria *T) (int, error)
 	DeleteWhere(query string, paramValues ...any) (int, error)
 
-	UpdateAll(entities []T) (int, error)
 	Update(entity *T) (int, error)
+	UpdateAll(entities []T) (int, error)
+	UpdateWhere(entity *T, query string, paramValues ...any) (int, error)
 }
 
 type CrudServiceOptions struct {
@@ -186,6 +187,9 @@ func (service *CrudServiceImpl[T]) CreateAll(entities []T) ([]T, error) {
 }
 
 func (service *CrudServiceImpl[T]) Create(entity *T) (*T, error) {
+	if entity == nil {
+		return nil, errors.New("cannot create nil entity")
+	}
 	result, err := service.CreateAll([]T{*entity})
 	if err != nil {
 		return nil, err
@@ -226,4 +230,12 @@ func (service *CrudServiceImpl[T]) UpdateAll(entities []T) (int, error) {
 
 func (service *CrudServiceImpl[T]) Update(entity *T) (int, error) {
 	return service.UpdateAll([]T{*entity})
+}
+
+func (service *CrudServiceImpl[T]) UpdateWhere(entity *T, query string, paramValues ...any) (int, error) {
+	db_result := service._db.Model(new(T)).Where(query, paramValues...).Updates(entity)
+	if db_result.Error != nil {
+		return 0, db_result.Error
+	}
+	return int(db_result.RowsAffected), nil
 }
