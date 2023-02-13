@@ -70,9 +70,9 @@ func TestCountQuery(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-func TestFindWhere(t *testing.T) {
+func TestFindAll(t *testing.T) {
 	create_and_populate_test_db(30)
-	result, err := contactsService.FindWhere(&TestContact{FullName: "Cont-1"}, Paged(0, 10))
+	result, err := contactsService.FindAll(&TestContact{FullName: "Cont-1"}, Paged(0, 10))
 	assert.Equal(t, 1, result.TotalCount)
 	assert.Equal(t, 1, result.TotalPages)
 	assert.Equal(t, 0, result.CurrentPage)
@@ -83,7 +83,7 @@ func TestFindWhere(t *testing.T) {
 	assert.Equal(t, "c_1@gmail.com", result.List[0].Email)
 	assert.Nil(t, err)
 
-	result, err = contactsService.FindWhere(&TestContact{Code: 0}, Paged(1, 5))
+	result, err = contactsService.FindAll(&TestContact{Code: 0}, Paged(1, 5))
 	assert.Equal(t, 30, result.TotalCount)
 	assert.Equal(t, 6, result.TotalPages)
 	assert.Equal(t, 1, result.CurrentPage)
@@ -95,9 +95,9 @@ func TestFindWhere(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-func TestFindByQuery(t *testing.T) {
+func TestFindAllWhere(t *testing.T) {
 	create_and_populate_test_db(30)
-	result, err := contactsService.FindByQuery(Paged(0, 10), "full_name like ?", "Cont-%")
+	result, err := contactsService.FindAllWhere("full_name like ?", "Cont-%", Paged(0, 10))
 	assert.Equal(t, 30, result.TotalCount)
 	assert.Equal(t, 3, result.TotalPages)
 	assert.Equal(t, 0, result.CurrentPage)
@@ -108,7 +108,7 @@ func TestFindByQuery(t *testing.T) {
 	assert.Equal(t, "c_0@gmail.com", result.List[0].Email)
 	assert.Nil(t, err)
 
-	result, err = contactsService.FindByQuery(Paged(1, 5), "full_name like ?", "Cont-%")
+	result, err = contactsService.FindAllWhere("full_name like ?", "Cont-%", Paged(1, 5))
 	assert.Equal(t, 30, result.TotalCount)
 	assert.Equal(t, 6, result.TotalPages)
 	assert.Equal(t, 1, result.CurrentPage)
@@ -119,7 +119,7 @@ func TestFindByQuery(t *testing.T) {
 	assert.Equal(t, "c_5@gmail.com", result.List[0].Email)
 	assert.Nil(t, err)
 
-	result, err = contactsService.FindByQuery(Paged(1, 5), "invalid_column like ?", "Cont-%")
+	result, err = contactsService.FindAllWhere("invalid_column like ?", "Cont-%", Paged(1, 5))
 	assert.NotNil(t, err)
 	assert.Nil(t, result)
 }

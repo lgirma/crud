@@ -2,14 +2,15 @@ package crud
 
 import (
 	"errors"
+	"strings"
 
 	"gorm.io/gorm"
 )
 
 type CrudService[T any] interface {
-	FindWhere(criteria *T, filter ...*DataFilter) (*PagedList[T], error)
-	FindByQuery(filter *DataFilter, query string, paramValues ...any) (*PagedList[T], error)
 	GetAll(filter ...*DataFilter) (*PagedList[T], error)
+	FindAll(criteria *T, filter ...*DataFilter) (*PagedList[T], error)
+	FindAllWhere(query string, paramValuesAndFilter ...any) (*PagedList[T], error)
 
 	FindOne(criteria ...*T) (*T, error)
 	FindOneWhere(query string, paramValues ...any) (*T, error)
@@ -32,7 +33,7 @@ type CrudServiceOptions struct {
 	DefaultPageSize    int
 	PublicIdColumnName string
 	IdGenerator        IdGenerator
-	DontGenerateIds    bool
+	DisableAutoIdGeneration    bool
 }
 
 func GetDefaultCrudServiceOptions() *CrudServiceOptions {
@@ -40,7 +41,7 @@ func GetDefaultCrudServiceOptions() *CrudServiceOptions {
 		DefaultPageSize:    5,
 		PublicIdColumnName: "public_id",
 		IdGenerator:        CreateNewIdGenerator(),
-		DontGenerateIds:    false,
+		DisableAutoIdGeneration:    false,
 	}
 }
 
@@ -74,13 +75,13 @@ func NewCrudService[T any](db *gorm.DB, getPublicId func(T) any, setPublicId fun
 	}
 }
 
-func (service *CrudServiceImpl[T]) FindWhere(criteria *T, filters ...*DataFilter) (*PagedList[T], error) {
+func (service *CrudServiceImpl[T]) FindAll(criteria *T, filterParam ...*DataFilter) (*PagedList[T], error) {
 	var resultList []T
 	var filter *DataFilter
-	if len(filters) > 0 {
-		filter = filters[0]
+	if len(filterParam) > 0 {
+		filter = filterParam[0]
 	}
-	normalizeFilter(filter, service._options.DefaultPageSize)
+	filter = normalizeFilter(filter, service._options.DefaultPageSize)
 	db_result := service._db.Model(new(T)).
 		Where(&criteria).
 		Limit(filter.ItemsPerPage).
@@ -97,9 +98,18 @@ func (service *CrudServiceImpl[T]) FindWhere(criteria *T, filters ...*DataFilter
 	return result, nil
 }
 
-func (service *CrudServiceImpl[T]) FindByQuery(filter *DataFilter, query string, paramValues ...any) (*PagedList[T], error) {
+func (service *CrudServiceImpl[T]) FindAllWhere(query string, paramValuesAndFilter ...any) (*PagedList[T], error) {
 	var resultList []T
-	normalizeFilter(filter, service._options.DefaultPageSize)
+	var filter *DataFilter
+	var paramValues []any
+	paramValuesCount := strings.Count(query, "?")
+	if paramValuesCount > 0 {
+		paramValues = paramValuesAndFilter[:len(paramValuesAndFilter)-1]
+	}
+	if len(paramValuesAndFilter) == len(paramValues) + 1 {
+		filter = paramValuesAndFilter[len(paramValuesAndFilter)-1].(*DataFilter)
+	}
+	filter = normalizeFilter(filter, service._options.DefaultPageSize)
 	db_result := service._db.Model(new(T)).
 		Where(query, paramValues...).
 		Limit(filter.ItemsPerPage).
@@ -121,14 +131,14 @@ func (service *CrudServiceImpl[T]) GetAll(filters ...*DataFilter) (*PagedList[T]
 	if len(filters) > 0 {
 		filter = filters[0]
 	}
-	return service.FindByQuery(filter, "1=1")
+	return service.FindAllWhere("1=1", filter)
 }
 
 func (service *CrudServiceImpl[T]) FindOne(criteria ...*T) (*T, error) {
 	var result *PagedList[T]
 	var err error
 	if len(criteria) > 0 {
-		result, err = service.FindWhere(criteria[0], Paged(0, 1))
+		result, err = service.FindAll(criteria[0], Paged(0, 1))
 	} else {
 		result, err = service.GetAll(Paged(0, 1))
 	}
@@ -143,7 +153,8 @@ func (service *CrudServiceImpl[T]) FindOne(criteria ...*T) (*T, error) {
 }
 
 func (service *CrudServiceImpl[T]) FindOneWhere(query string, paramValues ...any) (*T, error) {
-	result, err := service.FindByQuery(Paged(0, 1), query, paramValues...)
+	params := append(paramValues, Paged(0, 1))
+	result, err := service.FindAllWhere(query, params...)
 	if err != nil {
 		return nil, err
 	}

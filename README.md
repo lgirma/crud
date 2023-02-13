@@ -1,6 +1,17 @@
-# go-crud
+# crud
 
 Database CRUD operations utility for Go using [gorm](https://gorm.io).
+
+## Table of contents
+
+- [crud](#crud)
+  - [Table of contents](#table-of-contents)
+  - [Installation](#installation)
+  - [Usage](#usage)
+    - [Create](#create)
+    - [Read](#read)
+    - [Update](#update)
+    - [Delete](#delete)
 
 ## Installation
 
@@ -59,7 +70,7 @@ rowsAffected, err := contactRepo.CreateAll([]Contact{
 
 ### Read
 
-To fetch list of entities based on a criteria, use `FindWhere()` and `FindByQuery()` as:
+To fetch list of entities based on a criteria, use `GetAll()`, `FindAll()` and `FindAllWhere()` as:
 
 ```go
 // Find all contacts with the default paging (first 10 rows)
@@ -69,13 +80,16 @@ result, err := contactRepo.GetAll()
 result2, err := contactRepo.GetAll(Paged(0, 5))
 
 // Find contacts with the given name, 1st page, with 10 rows per page:
-result, err := contactRepo.FindWhere(&Contact{FullName: "Cont-1"}, Paged(0, 10))
+result, err := contactRepo.FindAll(&Contact{FullName: "Cont-1"}, Paged(0, 10))
 // result.TotalCount - the total number of results regardles of paging
 // result.List - the pagenated list
 // result.TotalPages - the number of pages
 
 // Find contacts whose full name starts with 'J':
-result, err := contactRepo.FindByQuery(Paged(0, 10), "full_name like ?", "J%")
+result, err := contactRepo.FindAllWhere("full_name like ?", "J%")
+
+// Same with explicit paging:
+result, err := contactRepo.FindAllWhere("full_name like ?", "J%", Paged(0, 5))
 ```
 
 To find a single entity based on a criteria, use `FindOne()` or `FindOneWhere()` as:
@@ -109,7 +123,7 @@ count, err := contactRepo.CountWhere("full_name like ?", "J%")
 To update an entity, use `Update()` as:
 
 ```go
-result, err := contactRepo.FindOneWhere(&Contact{Email: "test@mail.com"})
+result, err := contactRepo.FindOne(&Contact{Email: "test@mail.com"})
 
 result.Email = "test_update@gmail.com"
 contactRepo.Update(result)
@@ -118,7 +132,7 @@ contactRepo.Update(result)
 To do bulk updates, use `UpdateAll()` as:
 
 ```go
-entities, err := contactRepo.FindByQuery("full_name like ?", "J%")
+entities, err := contactRepo.FindAllWhere("full_name like ?", "J%")
 
 for i := range entities {
     entities[i].Email += ".et"
