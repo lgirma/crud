@@ -11,8 +11,8 @@ type CrudService[T any] interface {
 	FindByQuery(filter *DataFilter, query string, paramValues ...any) (*PagedList[T], error)
 	GetAll(filter ...*DataFilter) (*PagedList[T], error)
 
-	FindOneWhere(criteria *T) (*T, error)
-	FindOneByQuery(query string, paramValues ...any) (*T, error)
+	FindOne(criteria ...*T) (*T, error)
+	FindOneWhere(query string, paramValues ...any) (*T, error)
 
 	Count(criteria ...*T) (int, error)
 	CountWhere(query string, paramValues ...any) (int, error)
@@ -123,8 +123,15 @@ func (service *CrudServiceImpl[T]) GetAll(filters ...*DataFilter) (*PagedList[T]
 	return service.FindByQuery(filter, "1=1")
 }
 
-func (service *CrudServiceImpl[T]) FindOneWhere(criteria *T) (*T, error) {
-	result, err := service.FindWhere(criteria, Paged(0, 1))
+func (service *CrudServiceImpl[T]) FindOne(criteria ...*T) (*T, error) {
+	var result *PagedList[T]
+	var err error
+	if len(criteria) > 0 {
+		result, err = service.FindWhere(criteria[0], Paged(0, 1))
+	} else {
+		result, err = service.GetAll(Paged(0, 1))
+	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -134,7 +141,7 @@ func (service *CrudServiceImpl[T]) FindOneWhere(criteria *T) (*T, error) {
 	return &result.List[0], nil
 }
 
-func (service *CrudServiceImpl[T]) FindOneByQuery(query string, paramValues ...any) (*T, error) {
+func (service *CrudServiceImpl[T]) FindOneWhere(query string, paramValues ...any) (*T, error) {
 	result, err := service.FindByQuery(Paged(0, 1), query, paramValues...)
 	if err != nil {
 		return nil, err

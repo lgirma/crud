@@ -78,14 +78,17 @@ result, err := contactRepo.FindWhere(&Contact{FullName: "Cont-1"}, Paged(0, 10))
 result, err := contactRepo.FindByQuery(Paged(0, 10), "full_name like ?", "J%")
 ```
 
-To find a single entity based on a criteria, use `FindOneWhere()` or `FindOneByQuery()` as:
+To find a single entity based on a criteria, use `FindOne()` or `FindOneWhere()` as:
 
 ```go
+// Find the first contact or return nil if there isn't any
+result, err := contactRepo.FindOne()
+
 // Find a contact with the given name, or return nil if it doesn't exist:
-result, err := contactRepo.FindOneWhere(&Contact{Email: "test@mail.com"})
+result, err := contactRepo.FindOne(&Contact{Email: "test@mail.com"})
 
 // Find the first contact whose full name starts with 'J':
-result, err := contactRepo.FindOneByQuery("full_name like ?", "J%")
+result, err := contactRepo.FindOneWhere("full_name like ?", "J%")
 ```
 
 To count rows, use any of `Count` or `CountWhere` methods as:

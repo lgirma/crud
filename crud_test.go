@@ -95,7 +95,7 @@ func TestFindWhere(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-func TestFindQuery(t *testing.T) {
+func TestFindByQuery(t *testing.T) {
 	create_and_populate_test_db(30)
 	result, err := contactsService.FindByQuery(Paged(0, 10), "full_name like ?", "Cont-%")
 	assert.Equal(t, 30, result.TotalCount)
@@ -119,7 +119,7 @@ func TestFindQuery(t *testing.T) {
 	assert.Equal(t, "c_5@gmail.com", result.List[0].Email)
 	assert.Nil(t, err)
 
-	result, err = contactsService.FindByQuery(Paged(1, 5), "full_names like ?", "Cont-%")
+	result, err = contactsService.FindByQuery(Paged(1, 5), "invalid_column like ?", "Cont-%")
 	assert.NotNil(t, err)
 	assert.Nil(t, result)
 }
@@ -140,30 +140,30 @@ func TestGetAll(t *testing.T) {
 
 func TestFindOneWhere(t *testing.T) {
 	create_and_populate_test_db(30)
-	result, err := contactsService.FindOneWhere(&TestContact{FullName: "Cont-1"})
+	result, err := contactsService.FindOne(&TestContact{FullName: "Cont-1"})
 	assert.Nil(t, err)
 	assert.NotNil(t, result)
 	assert.Equal(t, "Cont-1", result.FullName)
 	assert.Equal(t, "c_1@gmail.com", result.Email)
 
-	result, err = contactsService.FindOneWhere(&TestContact{FullName: "258-888"})
+	result, err = contactsService.FindOne(&TestContact{FullName: "258-888"})
 	assert.Nil(t, err)
 	assert.Nil(t, result)
 }
 
 func TestFindOneByQuery(t *testing.T) {
 	create_and_populate_test_db(30)
-	result, err := contactsService.FindOneByQuery("full_name = ?", "Cont-1")
+	result, err := contactsService.FindOneWhere("full_name = ?", "Cont-1")
 	assert.Nil(t, err)
 	assert.NotNil(t, result)
 	assert.Equal(t, "Cont-1", result.FullName)
 	assert.Equal(t, "c_1@gmail.com", result.Email)
 
-	result, err = contactsService.FindOneByQuery("full_name = ?", "58-1")
+	result, err = contactsService.FindOneWhere("full_name = ?", "58-1")
 	assert.Nil(t, err)
 	assert.Nil(t, result)
 
-	result, err = contactsService.FindOneByQuery("full_names = ?", "58-1")
+	result, err = contactsService.FindOneWhere("non_existing_col = ?", "58-1")
 	assert.NotNil(t, err)
 	assert.Nil(t, result)
 }
