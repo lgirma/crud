@@ -20,8 +20,8 @@ type CrudService[T any] interface {
 	CreateAll(entities []T) ([]T, error)
 	Create(entity *T) (*T, error)
 
-	DeleteWhere(criteria *T) (int, error)
-	DeleteByQuery(query string, paramValues ...any) (int, error)
+	Delete(criteria *T) (int, error)
+	DeleteWhere(query string, paramValues ...any) (int, error)
 
 	UpdateAll(entities []T) (int, error)
 	Update(entity *T) (int, error)
@@ -196,7 +196,7 @@ func (service *CrudServiceImpl[T]) Create(entity *T) (*T, error) {
 	return &result[0], nil
 }
 
-func (service *CrudServiceImpl[T]) DeleteWhere(criteria *T) (int, error) {
+func (service *CrudServiceImpl[T]) Delete(criteria *T) (int, error) {
 	db_result := service._db.Where(criteria).Delete(new(T))
 	if db_result.Error != nil {
 		return 0, db_result.Error
@@ -204,7 +204,7 @@ func (service *CrudServiceImpl[T]) DeleteWhere(criteria *T) (int, error) {
 	return int(db_result.RowsAffected), nil
 }
 
-func (service *CrudServiceImpl[T]) DeleteByQuery(query string, paramValues ...any) (int, error) {
+func (service *CrudServiceImpl[T]) DeleteWhere(query string, paramValues ...any) (int, error) {
 	db_result := service._db.Where(query, paramValues...).Delete(new(T))
 	if db_result.Error != nil {
 		return 0, db_result.Error

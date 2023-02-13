@@ -199,7 +199,7 @@ func TestCreate(t *testing.T) {
 
 func TestDeleteWhere(t *testing.T) {
 	create_and_populate_test_db(30)
-	result, err := contactsService.DeleteWhere(&TestContact{FullName: "Cont-1"})
+	result, err := contactsService.Delete(&TestContact{FullName: "Cont-1"})
 
 	assert.Nil(t, err)
 	assert.Equal(t, 1, result)
@@ -212,7 +212,7 @@ func TestDeleteWhere(t *testing.T) {
 
 func TestDeleteByQuery(t *testing.T) {
 	create_and_populate_test_db(30)
-	result, err := contactsService.DeleteByQuery("full_name like ?", "Cont-1%")
+	result, err := contactsService.DeleteWhere("full_name like ?", "Cont-1%")
 
 	assert.Nil(t, err)
 	assert.Equal(t, 11, result)

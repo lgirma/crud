@@ -128,12 +128,12 @@ contactRepo.UpdateAll(entities)
 
 ### Delete
 
-To delete entities using criteria, use `DeleteWhere()` or `DeleteByQuery()` as follows:
+To delete entities using criteria, use `Delete()` or `DeleteWhere()` as follows:
 
 ```go
 // Equivalent to: DELTE FROM contacts WHERE full_name = 'Cont-1'
-rowsAffected, err := contactRepo.DeleteWhere(&Contact{FullName: "Cont-1"})
+rowsAffected, err := contactRepo.DeleteWher(&Contact{FullName: "Cont-1"})
 
 // Equivalent to: DELTE FROM contacts WHERE full_name LIKE 'J%'
-contactRepo.DeleteByQuery("full_name like ?", "J%")
+contactRepo.DeleteWhere("full_name like ?", "J%")
 ```
