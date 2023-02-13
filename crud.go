@@ -7,15 +7,15 @@ import (
 )
 
 type CrudService[T any] interface {
-	FindWhere(criteria *T, filter *DataFilter) (*PagedList[T], error)
+	FindWhere(criteria *T, filter ...*DataFilter) (*PagedList[T], error)
 	FindByQuery(filter *DataFilter, query string, paramValues ...any) (*PagedList[T], error)
+	GetAll(filter ...*DataFilter) (*PagedList[T], error)
 
 	FindOneWhere(criteria *T) (*T, error)
 	FindOneByQuery(query string, paramValues ...any) (*T, error)
 
-	Count() int
-	CountByQuery(query string, paramValues ...any) (int, error)
-	CountWhere(criteria *T) (int, error)
+	Count(criteria ...*T) (int, error)
+	CountWhere(query string, paramValues ...any) (int, error)
 
 	CreateAll(entities []T) ([]T, error)
 	Create(entity *T) (*T, error)
@@ -31,6 +31,7 @@ type CrudServiceOptions struct {
 	DefaultPageSize    int
 	PublicIdColumnName string
 	IdGenerator        IdGenerator
+	DontGenerateIds    bool
 }
 
 func GetDefaultCrudServiceOptions() *CrudServiceOptions {
@@ -38,6 +39,7 @@ func GetDefaultCrudServiceOptions() *CrudServiceOptions {
 		DefaultPageSize:    5,
 		PublicIdColumnName: "public_id",
 		IdGenerator:        CreateNewIdGenerator(),
+		DontGenerateIds:    false,
 	}
 }
 
@@ -71,15 +73,19 @@ func NewCrudService[T any](db *gorm.DB, getPublicId func(T) any, setPublicId fun
 	}
 }
 
-func (service *CrudServiceImpl[T]) FindWhere(criteria *T, filter *DataFilter) (*PagedList[T], error) {
+func (service *CrudServiceImpl[T]) FindWhere(criteria *T, filters ...*DataFilter) (*PagedList[T], error) {
 	var resultList []T
+	var filter *DataFilter
+	if len(filters) > 0 {
+		filter = filters[0]
+	}
 	normalizeFilter(filter, service._options.DefaultPageSize)
 	db_result := service._db.Model(new(T)).
 		Where(&criteria).
 		Limit(filter.ItemsPerPage).
 		Offset(filter.CurrentPage * filter.ItemsPerPage).
 		Find(&resultList)
-	totalCount, err := service.CountWhere(criteria)
+	totalCount, err := service.Count(criteria)
 	if db_result.Error != nil {
 		return nil, db_result.Error
 	}
@@ -98,7 +104,7 @@ func (service *CrudServiceImpl[T]) FindByQuery(filter *DataFilter, query string,
 		Limit(filter.ItemsPerPage).
 		Offset(filter.CurrentPage * filter.ItemsPerPage).
 		Find(&resultList)
-	totalCount, err := service.CountByQuery(query, paramValues...)
+	totalCount, err := service.CountWhere(query, paramValues...)
 	if db_result.Error != nil {
 		return nil, db_result.Error
 	}
@@ -107,6 +113,14 @@ func (service *CrudServiceImpl[T]) FindByQuery(filter *DataFilter, query string,
 	}
 	result := NewPagedList(resultList, totalCount, filter)
 	return result, nil
+}
+
+func (service *CrudServiceImpl[T]) GetAll(filters ...*DataFilter) (*PagedList[T], error) {
+	var filter *DataFilter
+	if len(filters) > 0 {
+		filter = filters[0]
+	}
+	return service.FindByQuery(filter, "1=1")
 }
 
 func (service *CrudServiceImpl[T]) FindOneWhere(criteria *T) (*T, error) {
@@ -131,14 +145,7 @@ func (service *CrudServiceImpl[T]) FindOneByQuery(query string, paramValues ...a
 	return &result.List[0], nil
 }
 
-func (service *CrudServiceImpl[T]) Count() int {
-	var result int64
-	var model T
-	service._db.Model(&model).Count(&result)
-	return int(result)
-}
-
-func (service *CrudServiceImpl[T]) CountByQuery(query string, paramValues ...any) (int, error) {
+func (service *CrudServiceImpl[T]) CountWhere(query string, paramValues ...any) (int, error) {
 	var result int64
 	var model T
 	db_result := service._db.Model(&model).Where(query, paramValues...).Count(&result)
@@ -148,9 +155,15 @@ func (service *CrudServiceImpl[T]) CountByQuery(query string, paramValues ...any
 	return int(result), nil
 }
 
-func (service *CrudServiceImpl[T]) CountWhere(criteria *T) (int, error) {
+func (service *CrudServiceImpl[T]) Count(criteriaParam ...*T) (int, error) {
 	var result int64
-	db_result := service._db.Model(criteria).Where(criteria).Count(&result)
+	var db_result *gorm.DB
+	if len(criteriaParam) > 0 {
+		db_result = service._db.Model(criteriaParam[0]).Where(criteriaParam[0]).Count(&result)
+	} else {
+		db_result = service._db.Model(new(T)).Count(&result)
+	}
+
 	if db_result.Error != nil {
 		return 0, db_result.Error
 	}

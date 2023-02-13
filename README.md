@@ -16,22 +16,23 @@ First setup your database entities as:
 
 ```go
 type Contact struct {
-	PublicId string `gorm:"primaryKey"`
-	FullName string
-	Code     int
-	Email    string
-	Phone    string
+  PublicId string `gorm:"primaryKey"`
+  FullName string
+  Code     int
+  Email    string
+  Phone    string
 }
 ```
 
 Then create a repository for that entity use the `crud.NewCrudService()` method.
 
 ```go
+// NewCrudService(connection, PK_getter, PK_setter, options)
 contactRepo = crud.NewCrudService(myDbConnection,
-		func(t Contact) any { return t.PublicId },
-		func(t *Contact, s any) { t.PublicId = s.(string) },
-		&crud.CrudServiceOptions{},
-	)
+  func(t Contact) any { return t.PublicId },
+  func(t *Contact, s any) { t.PublicId = s.(string) },
+  &crud.CrudServiceOptions{},
+)
 ```
 
 There we told the repository how we would read and write the primary key (which is usually a public key).
@@ -42,8 +43,8 @@ To create an entity use `Create` as:
 
 ```go
 contactRepo.Create(&Contact{
-    FullName: "NewCont", 
-    Email: "test@mail.com",
+  FullName: "NewCont", 
+  Email: "test@mail.com",
 })
 ```
 
@@ -51,8 +52,8 @@ Or use `CreateAll()` to create in batch:
 
 ```go
 rowsAffected, err := contactRepo.CreateAll([]Contact{
-    {FullName: "John", Email: "john@mail.com"},
-    {FullName: "Peter", Email: "peter@mail.com"},
+  {FullName: "John", Email: "john@mail.com"},
+  {FullName: "Peter", Email: "peter@mail.com"},
 })
 ```
 
@@ -61,6 +62,12 @@ rowsAffected, err := contactRepo.CreateAll([]Contact{
 To fetch list of entities based on a criteria, use `FindWhere()` and `FindByQuery()` as:
 
 ```go
+// Find all contacts with the default paging (first 10 rows)
+result, err := contactRepo.GetAll()
+
+// Find the first 5 contacts
+result2, err := contactRepo.GetAll(Paged(0, 5))
+
 // Find contacts with the given name, 1st page, with 10 rows per page:
 result, err := contactRepo.FindWhere(&Contact{FullName: "Cont-1"}, Paged(0, 10))
 // result.TotalCount - the total number of results regardles of paging
@@ -81,17 +88,17 @@ result, err := contactRepo.FindOneWhere(&Contact{Email: "test@mail.com"})
 result, err := contactRepo.FindOneByQuery("full_name like ?", "J%")
 ```
 
-To count rows, use any of `Count` or `CountWhere` or `CountByQuery` methods as:
+To count rows, use any of `Count` or `CountWhere` methods as:
 
 ```go
 // Count all rows
 count := contactRepo.Count()
 
 // Count rows with criteria
-count, err := contactRepo.CountWhere(&Contact{Email: "test@mail.com"})
+count, err := contactRepo.Count(&Contact{Email: "test@mail.com"})
 
 // Count rows with query
-count, err := contactRepo.CountByQuery("full_name like ?", "J%")
+count, err := contactRepo.CountWhere("full_name like ?", "J%")
 ```
 
 ### Update
@@ -121,7 +128,9 @@ contactRepo.UpdateAll(entities)
 To delete entities using criteria, use `DeleteWhere()` or `DeleteByQuery()` as follows:
 
 ```go
+// Equivalent to: DELTE FROM contacts WHERE full_name = 'Cont-1'
 rowsAffected, err := contactRepo.DeleteWhere(&Contact{FullName: "Cont-1"})
 
+// Equivalent to: DELTE FROM contacts WHERE full_name LIKE 'J%'
 contactRepo.DeleteByQuery("full_name like ?", "J%")
 ```

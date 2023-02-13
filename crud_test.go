@@ -51,20 +51,21 @@ func create_and_populate_test_db(seedDataLength int) {
 
 func TestCount(t *testing.T) {
 	create_and_populate_test_db(30)
-	result := contactsService.Count()
+	result, err := contactsService.Count()
+	assert.Nil(t, err)
 	assert.Equal(t, 30, result)
 }
 
 func TestCountWhere(t *testing.T) {
 	create_and_populate_test_db(30)
-	result, err := contactsService.CountWhere(&TestContact{FullName: "Cont-1"})
+	result, err := contactsService.Count(&TestContact{FullName: "Cont-1"})
 	assert.Equal(t, 1, result)
 	assert.Nil(t, err)
 }
 
 func TestCountQuery(t *testing.T) {
 	create_and_populate_test_db(30)
-	result, err := contactsService.CountByQuery("full_name LIKE ?", "Cont-1%")
+	result, err := contactsService.CountWhere("full_name LIKE ?", "Cont-1%")
 	assert.Equal(t, 11, result)
 	assert.Nil(t, err)
 }
@@ -121,6 +122,20 @@ func TestFindQuery(t *testing.T) {
 	result, err = contactsService.FindByQuery(Paged(1, 5), "full_names like ?", "Cont-%")
 	assert.NotNil(t, err)
 	assert.Nil(t, result)
+}
+
+func TestGetAll(t *testing.T) {
+	create_and_populate_test_db(30)
+	result, err := contactsService.GetAll(Paged(0, 10))
+	assert.Equal(t, 30, result.TotalCount)
+	assert.Equal(t, 3, result.TotalPages)
+	assert.Equal(t, 0, result.CurrentPage)
+	assert.Equal(t, true, result.HasNext)
+	assert.Equal(t, false, result.HasPrevious)
+	assert.Len(t, result.List, 10)
+	assert.Equal(t, "Cont-0", result.List[0].FullName)
+	assert.Equal(t, "c_0@gmail.com", result.List[0].Email)
+	assert.Nil(t, err)
 }
 
 func TestFindOneWhere(t *testing.T) {
