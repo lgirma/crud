@@ -11,8 +11,10 @@ type CrudService[T any] interface {
 	GetAll(filter ...*DataFilter) (*PagedList[T], error)
 	FindAll(criteria *T, filter ...*DataFilter) (*PagedList[T], error)
 	FindAllWhere(query string, paramValuesAndFilter ...any) (*PagedList[T], error)
+	Lookup(searchKey string, filter ...*DataFilter) (*PagedList[T], error)
 
 	FindOne(criteria ...*T) (*T, error)
+	FindOneByPublicId(publicId any) (*T, error)
 	FindOneWhere(query string, paramValues ...any) (*T, error)
 
 	Count(criteria ...*T) (int, error)
@@ -22,26 +24,32 @@ type CrudService[T any] interface {
 	Create(entity *T) (*T, error)
 
 	Delete(criteria *T) (int, error)
+	DeleteByPublicId(publicId any) (int, error)
+	DeleteAll(publicIds []any) (int, error)
 	DeleteWhere(query string, paramValues ...any) (int, error)
 
 	Update(entity *T) (int, error)
 	UpdateAll(entities []T) (int, error)
 	UpdateWhere(entity *T, query string, paramValues ...any) (int, error)
+
+	GetOptions() CrudServiceOptions
 }
 
 type CrudServiceOptions struct {
-	DefaultPageSize    int
-	PublicIdColumnName string
-	IdGenerator        IdGenerator
-	DisableAutoIdGeneration    bool
+	DefaultPageSize         int
+	PublicIdColumnName      string
+	IdGenerator             IdGenerator
+	DisableAutoIdGeneration bool
+	LookupQuery             string
 }
 
 func GetDefaultCrudServiceOptions() *CrudServiceOptions {
 	return &CrudServiceOptions{
-		DefaultPageSize:    5,
-		PublicIdColumnName: "public_id",
-		IdGenerator:        CreateNewIdGenerator(),
-		DisableAutoIdGeneration:    false,
+		DefaultPageSize:         5,
+		PublicIdColumnName:      "public_id",
+		IdGenerator:             CreateNewIdGenerator(),
+		DisableAutoIdGeneration: false,
+		LookupQuery:             "",
 	}
 }
 
@@ -65,6 +73,9 @@ func NewCrudService[T any](db *gorm.DB, getPublicId func(T) any, setPublicId fun
 		}
 		if options.IdGenerator == nil {
 			options.IdGenerator = defaultOptions.IdGenerator
+		}
+		if len(options.LookupQuery) == 0 {
+			options.LookupQuery = defaultOptions.LookupQuery
 		}
 	}
 	return &CrudServiceImpl[T]{
@@ -106,7 +117,7 @@ func (service *CrudServiceImpl[T]) FindAllWhere(query string, paramValuesAndFilt
 	if paramValuesCount > 0 {
 		paramValues = paramValuesAndFilter[:len(paramValuesAndFilter)-1]
 	}
-	if len(paramValuesAndFilter) == len(paramValues) + 1 {
+	if len(paramValuesAndFilter) == len(paramValues)+1 {
 		filter = paramValuesAndFilter[len(paramValuesAndFilter)-1].(*DataFilter)
 	}
 	filter = normalizeFilter(filter, service._options.DefaultPageSize)
@@ -124,6 +135,20 @@ func (service *CrudServiceImpl[T]) FindAllWhere(query string, paramValuesAndFilt
 	}
 	result := NewPagedList(resultList, totalCount, filter)
 	return result, nil
+}
+
+func (service *CrudServiceImpl[T]) Lookup(searchKey string, filter ...*DataFilter) (*PagedList[T], error) {
+	if len(service._options.LookupQuery) == 0 {
+		return nil, errors.New("lookup query should be provided when using NewCrudService options")
+	}
+	params := make([]any, 0)
+	for i := 0; i < strings.Count(service._options.LookupQuery, "?"); i++ {
+		params = append(params, searchKey)
+	}
+	if len(filter) > 0 {
+		params = append(params, filter[0])
+	}
+	return service.FindAllWhere(service._options.LookupQuery, "%"+searchKey+"%", params)
 }
 
 func (service *CrudServiceImpl[T]) GetAll(filters ...*DataFilter) (*PagedList[T], error) {
@@ -162,6 +187,10 @@ func (service *CrudServiceImpl[T]) FindOneWhere(query string, paramValues ...any
 		return nil, nil
 	}
 	return &result.List[0], nil
+}
+
+func (service *CrudServiceImpl[T]) FindOneByPublicId(publicId any) (*T, error) {
+	return service.FindOneWhere(service._options.PublicIdColumnName+" = ?", publicId)
 }
 
 func (service *CrudServiceImpl[T]) CountWhere(query string, paramValues ...any) (int, error) {
@@ -219,12 +248,22 @@ func (service *CrudServiceImpl[T]) Delete(criteria *T) (int, error) {
 	return int(db_result.RowsAffected), nil
 }
 
+func (service *CrudServiceImpl[T]) DeleteByPublicId(publicId any) (int, error) {
+	entity := new(T)
+	service.SetPublicId(entity, publicId)
+	return service.Delete(entity)
+}
+
 func (service *CrudServiceImpl[T]) DeleteWhere(query string, paramValues ...any) (int, error) {
 	db_result := service._db.Where(query, paramValues...).Delete(new(T))
 	if db_result.Error != nil {
 		return 0, db_result.Error
 	}
 	return int(db_result.RowsAffected), nil
+}
+
+func (service *CrudServiceImpl[T]) DeleteAll(publicIds []any) (int, error) {
+	return service.DeleteWhere(service._options.PublicIdColumnName+" in ?", publicIds)
 }
 
 func (service *CrudServiceImpl[T]) UpdateAll(entities []T) (int, error) {
@@ -249,4 +288,8 @@ func (service *CrudServiceImpl[T]) UpdateWhere(entity *T, query string, paramVal
 		return 0, db_result.Error
 	}
 	return int(db_result.RowsAffected), nil
+}
+
+func (service *CrudServiceImpl[T]) GetOptions() CrudServiceOptions {
+	return *service._options
 }

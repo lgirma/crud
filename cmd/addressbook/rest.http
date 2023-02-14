@@ -1,0 +1,55 @@
+GET http://localhost:5050/api/contacts
+
+###
+
+POST http://localhost:5050/api/contacts
+Content-Type: application/json
+
+{
+    "CurrentPage": 5,
+    "ItemsPerPage": 4
+}
+
+###
+
+GET http://localhost:5050/api/contacts/get/e61bc045-f55b-4390-ac22-cb83734561ed
+
+###
+
+GET http://localhost:5050/api/contacts/count
+
+###
+
+POST http://localhost:5050/api/contacts/create
+Content-Type: application/json
+
+{
+    "FullName": "Abebe Tadesse",
+	"Email": "abe@mail.co.uk",
+	"Phone": "+11-985-9632",
+	"Address": "London, UK"
+}
+
+###
+
+POST http://localhost:5050/api/contacts/create-all
+Content-Type: application/json
+
+[
+    { "FullName": "Asnaqe Alemu", "Email": "asnu@mail.com", "Phone": "+52-985-3258", "Address": "Cambridge, UK" },
+    { "FullName": "Almaz", "Email": "abe@ymail.io", "Phone": "+251-911-896698", "Address": "Addis Ababa, Ethiopia" }
+]
+
+###
+
+GET http://localhost:5050/api/contacts/delete/03a52fe8-8123-4264-a4df-01991f02c74b
+
+###
+
+POST http://localhost:5050/api/contacts/delete-all
+Content-Type: application/json
+
+["49b670d4-1e1e-4202-81af-f995e723d4f6", "68554c9a-a62d-4998-a789-3deaa7092249"]
+
+###
+

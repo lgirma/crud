@@ -45,7 +45,9 @@ func create_and_populate_test_db(seedDataLength int) {
 	contactsService = NewCrudService(crud_test_db,
 		func(t TestContact) any { return t.PublicId },
 		func(t *TestContact, s any) { t.PublicId = s.(string) },
-		&CrudServiceOptions{},
+		&CrudServiceOptions{
+			LookupQuery: "full_name like ? or email like ?",
+		},
 	)
 }
 
@@ -138,7 +140,14 @@ func TestGetAll(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-func TestFindOneWhere(t *testing.T) {
+func TestLookup(t *testing.T) {
+	create_and_populate_test_db(30)
+	result, err := contactsService.Lookup("-2")
+	assert.Nil(t, err)
+	assert.Len(t, result, 11)
+}
+
+func TestFindOne(t *testing.T) {
 	create_and_populate_test_db(30)
 	result, err := contactsService.FindOne(&TestContact{FullName: "Cont-1"})
 	assert.Nil(t, err)
@@ -151,7 +160,7 @@ func TestFindOneWhere(t *testing.T) {
 	assert.Nil(t, result)
 }
 
-func TestFindOneByQuery(t *testing.T) {
+func TestFindOneWhere(t *testing.T) {
 	create_and_populate_test_db(30)
 	result, err := contactsService.FindOneWhere("full_name = ?", "Cont-1")
 	assert.Nil(t, err)
@@ -166,6 +175,17 @@ func TestFindOneByQuery(t *testing.T) {
 	result, err = contactsService.FindOneWhere("non_existing_col = ?", "58-1")
 	assert.NotNil(t, err)
 	assert.Nil(t, result)
+}
+
+func TestFindOneByPublicId(t *testing.T) {
+	create_and_populate_test_db(30)
+
+	var entity TestContact
+	crud_test_db.Model(&TestContact{}).First(&entity)
+
+	result, err := contactsService.FindOneByPublicId(entity.PublicId)
+	assert.Nil(t, err)
+	assert.NotNil(t, result)
 }
 
 func TestCreateAll(t *testing.T) {
@@ -197,7 +217,7 @@ func TestCreate(t *testing.T) {
 	assert.NotEmpty(t, result.PublicId)
 }
 
-func TestDeleteWhere(t *testing.T) {
+func TestDelete(t *testing.T) {
 	create_and_populate_test_db(30)
 	result, err := contactsService.Delete(&TestContact{FullName: "Cont-1"})
 
@@ -210,7 +230,37 @@ func TestDeleteWhere(t *testing.T) {
 	assert.Equal(t, 29, int(count))
 }
 
-func TestDeleteByQuery(t *testing.T) {
+func TestDeleteByPublicId(t *testing.T) {
+	create_and_populate_test_db(30)
+
+	var entity TestContact
+	crud_test_db.Model(&TestContact{}).First(&entity)
+
+	rowsAffected, err := contactsService.DeleteByPublicId(entity.PublicId)
+	assert.Nil(t, err)
+	assert.Equal(t, 1, rowsAffected)
+}
+
+func TestDeleteAll(t *testing.T) {
+	create_and_populate_test_db(30)
+
+	var entities []TestContact
+	crud_test_db.Model(&TestContact{}).Limit(2).Find(&entities)
+
+	publicIds := make([]any, 0)
+	for _, v := range entities {
+		publicIds = append(publicIds, v.PublicId)
+	}
+
+	rowsAffected, err := contactsService.DeleteAll(publicIds)
+	assert.Nil(t, err)
+	assert.Equal(t, 2, rowsAffected)
+
+	crud_test_db.Model(&TestContact{}).Where("public_id in ?", publicIds).Find(&entities)
+	assert.Len(t, entities, 0)
+}
+
+func TestDeleteWhere(t *testing.T) {
 	create_and_populate_test_db(30)
 	result, err := contactsService.DeleteWhere("full_name like ?", "Cont-1%")
 
