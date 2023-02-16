@@ -48,20 +48,24 @@ func main() {
 
 	contactsRepo := crud.NewCrudService(
 		Db,
-		func(e Contact) any { return e.PublicId },
-		func(t *Contact, a any) { t.PublicId = a.(string) },
-		&crud.CrudServiceOptions{},
+		func(e Contact) string { return e.PublicId },
+		func(t *Contact, a string) { t.PublicId = a },
+		&crud.CrudServiceOptions[Contact, string]{
+			LookupQuery: "full_name like ? or email like ?",
+		},
 	)
 
 	tagsRepo := crud.NewCrudService(
 		Db,
-		func(e Tag) any { return e.PublicId },
-		func(t *Tag, a any) { t.PublicId = a.(string) },
-		&crud.CrudServiceOptions{},
+		func(e Tag) string { return e.PublicId },
+		func(t *Tag, a string) { t.PublicId = a },
+		&crud.CrudServiceOptions[Tag, string]{
+			LookupQuery: "name like ?",
+		},
 	)
 
-	crud.AddCrudGinRestApi[Contact]("api/contacts", r, contactsRepo, &crud.CrudRestApiOptions[Contact]{})
-	crud.AddCrudGinRestApi[Tag]("api/tags", r, tagsRepo, &crud.CrudRestApiOptions[Tag]{})
+	crud.AddCrudGinRestApi[Contact, string]("api/contacts", r, contactsRepo, &crud.CrudRestApiOptions[Contact, string]{})
+	crud.AddCrudGinRestApi[Tag, string]("api/tags", r, tagsRepo, &crud.CrudRestApiOptions[Tag, string]{})
 
 	r.Run(":5050")
 }

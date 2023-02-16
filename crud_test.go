@@ -21,7 +21,7 @@ type TestContact struct {
 }
 
 var crud_test_db *gorm.DB
-var contactsService CrudService[TestContact]
+var contactsService CrudService[TestContact, string]
 
 func create_and_populate_test_db(seedDataLength int) {
 	dbName := GetRandomStr(5)
@@ -43,9 +43,9 @@ func create_and_populate_test_db(seedDataLength int) {
 	Db.Create(&contacts)
 	crud_test_db = Db
 	contactsService = NewCrudService(crud_test_db,
-		func(t TestContact) any { return t.PublicId },
-		func(t *TestContact, s any) { t.PublicId = s.(string) },
-		&CrudServiceOptions{
+		func(t TestContact) string { return t.PublicId },
+		func(t *TestContact, s string) { t.PublicId = s },
+		&CrudServiceOptions[TestContact, string]{
 			LookupQuery: "full_name like ? or email like ?",
 		},
 	)
@@ -144,7 +144,13 @@ func TestLookup(t *testing.T) {
 	create_and_populate_test_db(30)
 	result, err := contactsService.Lookup("-2")
 	assert.Nil(t, err)
-	assert.Len(t, result, 11)
+	assert.NotNil(t, result)
+	assert.Len(t, result.List, contactsService.GetOptions().DefaultPageSize)
+
+	result2, err := contactsService.Lookup("-2", Paged(0, 8))
+	assert.Nil(t, err)
+	assert.NotNil(t, result2)
+	assert.Len(t, result2.List, 8)
 }
 
 func TestFindOne(t *testing.T) {
@@ -247,7 +253,7 @@ func TestDeleteAll(t *testing.T) {
 	var entities []TestContact
 	crud_test_db.Model(&TestContact{}).Limit(2).Find(&entities)
 
-	publicIds := make([]any, 0)
+	publicIds := make([]string, 0)
 	for _, v := range entities {
 		publicIds = append(publicIds, v.PublicId)
 	}

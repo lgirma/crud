@@ -6,11 +6,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type CrudRestApiOptions[T any] struct {
-	PrimaryKeyParser func(primaryKeyStringVal string) any
+type CrudRestApiOptions[T any, TPublicId any] struct {
 }
 
-func AddCrudGinRestApi[T any](baseUrl string, ginEngine *gin.Engine, crudService CrudService[T], options *CrudRestApiOptions[T]) {
+func AddCrudGinRestApi[T any, TPublicId any](baseUrl string, ginEngine *gin.Engine, crudService CrudService[T, TPublicId], options *CrudRestApiOptions[T, TPublicId]) {
 	r := ginEngine
 	listEndPoint := func(c *gin.Context) {
 		var filter DataFilter
@@ -34,7 +33,8 @@ func AddCrudGinRestApi[T any](baseUrl string, ginEngine *gin.Engine, crudService
 
 	r.GET(baseUrl+"/get/:publicId", func(c *gin.Context) {
 		publicId := c.Param("publicId")
-		result, err := crudService.FindOneByPublicId(publicId)
+		// parse public ID
+		result, err := crudService.FindOneByPublicId(Parse[TPublicId](publicId))
 		if err != nil {
 			c.AbortWithError(500, err)
 		} else {
@@ -64,6 +64,32 @@ func AddCrudGinRestApi[T any](baseUrl string, ginEngine *gin.Engine, crudService
 		}
 	})
 
+	r.POST(baseUrl+"/update", func(c *gin.Context) {
+		var entity T
+		if err := c.ShouldBindJSON(&entity); err != nil {
+			c.AbortWithError(400, errors.New("invalid data to create"))
+		}
+		result, err := crudService.Update(&entity)
+		if err != nil {
+			c.AbortWithError(500, err)
+		} else {
+			c.JSON(200, result)
+		}
+	})
+
+	r.POST(baseUrl+"/update-all", func(c *gin.Context) {
+		var entities []T
+		if err := c.ShouldBindJSON(&entities); err != nil {
+			c.AbortWithError(400, errors.New("invalid data to create"))
+		}
+		result, err := crudService.UpdateAll(entities)
+		if err != nil {
+			c.AbortWithError(500, err)
+		} else {
+			c.JSON(200, result)
+		}
+	})
+
 	r.POST(baseUrl+"/create-all", func(c *gin.Context) {
 		var entities []T
 		if err := c.ShouldBindJSON(&entities); err != nil {
@@ -79,7 +105,7 @@ func AddCrudGinRestApi[T any](baseUrl string, ginEngine *gin.Engine, crudService
 
 	r.GET(baseUrl+"/delete/:publicId", func(c *gin.Context) {
 		publicId := c.Param("publicId")
-		result, err := crudService.DeleteByPublicId(publicId)
+		result, err := crudService.DeleteByPublicId(Parse[TPublicId](publicId))
 		if err != nil {
 			c.AbortWithError(500, err)
 		} else {
@@ -92,9 +118,9 @@ func AddCrudGinRestApi[T any](baseUrl string, ginEngine *gin.Engine, crudService
 		if err := c.ShouldBindJSON(&publicIdStrings); err != nil {
 			c.AbortWithError(400, errors.New("invalid list of public IDs"))
 		}
-		publicIds := make([]any, 0)
+		publicIds := make([]TPublicId, 0)
 		for _, v := range publicIdStrings {
-			publicIds = append(publicIds, v)
+			publicIds = append(publicIds, Parse[TPublicId](v))
 		}
 		result, err := crudService.DeleteAll(publicIds)
 		if err != nil {

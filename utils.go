@@ -1,7 +1,10 @@
 package crud
 
 import (
+	cryptoRand "crypto/rand"
+	"math/big"
 	"math/rand"
+	"strconv"
 	"time"
 	"unsafe"
 
@@ -35,17 +38,77 @@ func GetRandomStr(n int) string {
 	return *(*string)(unsafe.Pointer(&b))
 }
 
-type IdGenerator interface {
-	GetNewId() string
+type IdGenerator[T any] interface {
+	GetNewId() T
 }
 
-func CreateNewIdGenerator() IdGenerator {
-	return &UuidGenerator{}
+func CreateNewIdGenerator[T any]() IdGenerator[T] {
+	return &DefaultIdGenerator[T]{}
 }
 
-type UuidGenerator struct {
+type DefaultIdGenerator[T any] struct {
 }
 
-func (service *UuidGenerator) GetNewId() string {
-	return uuid.NewString()
+func (service *DefaultIdGenerator[T]) GetNewId() T {
+	var val any = *new(T)
+	if _, ok := val.(string); ok {
+		val = uuid.NewString()
+		return val.(T)
+	} else if _, ok := val.(int32); ok {
+		nBig, _ := cryptoRand.Int(cryptoRand.Reader, big.NewInt(100000000000))
+		val = int32(nBig.Uint64() & 0xFFFF0000)
+		return val.(T)
+	} else if _, ok := val.(int64); ok {
+		nBig, _ := cryptoRand.Int(cryptoRand.Reader, big.NewInt(100000000000))
+		val = nBig.Uint64()
+		return val.(T)
+	} else {
+		return *new(T)
+	}
+}
+
+func Parse[T any](str string) T {
+	var val any = *new(T)
+	if _, ok := val.(string); ok {
+		val = str
+		return val.(T)
+	} else if _, ok := val.(int32); ok {
+		parsedInt64, _ := strconv.ParseInt(str, 10, 32)
+		val = int32(parsedInt64)
+		return val.(T)
+	} else if _, ok := val.(int64); ok {
+		parsedInt64, _ := strconv.ParseInt(str, 10, 64)
+		val = parsedInt64
+		return val.(T)
+	} else if _, ok := val.(int16); ok {
+		parsedInt64, _ := strconv.ParseInt(str, 10, 16)
+		val = int16(parsedInt64)
+		return val.(T)
+	} else if _, ok := val.(int8); ok {
+		parsedInt64, _ := strconv.ParseInt(str, 10, 8)
+		val = int8(parsedInt64)
+		return val.(T)
+	} else if _, ok := val.(uint32); ok {
+		parsedInt64, _ := strconv.ParseUint(str, 10, 32)
+		val = uint32(parsedInt64)
+		return val.(T)
+	} else if _, ok := val.(uint64); ok {
+		parsedInt64, _ := strconv.ParseUint(str, 10, 64)
+		val = parsedInt64
+		return val.(T)
+	} else if _, ok := val.(uint16); ok {
+		parsedInt64, _ := strconv.ParseUint(str, 10, 16)
+		val = uint16(parsedInt64)
+		return val.(T)
+	} else if _, ok := val.(uint8); ok {
+		parsedInt64, _ := strconv.ParseUint(str, 10, 8)
+		val = uint8(parsedInt64)
+		return val.(T)
+	} else if _, ok := val.(bool); ok {
+		parsedBool, _ := strconv.ParseBool(str)
+		val = parsedBool
+		return val.(T)
+	} else {
+		return *new(T)
+	}
 }
