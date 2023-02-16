@@ -270,15 +270,21 @@ func (service *CrudServiceImpl[T, TPublicId]) DeleteAll(publicIds []TPublicId) (
 }
 
 func (service *CrudServiceImpl[T, TPublicId]) UpdateAll(entities []T) (int, error) {
-	publicIds := make([]any, 0)
-	for i := range entities {
-		publicIds = append(publicIds, service.GetPublicId(entities[i]))
-	}
-	db_result := service._db.Where(service._options.PublicIdColumnName+" in ?", publicIds).Save(entities)
-	if db_result.Error != nil {
-		return 0, db_result.Error
-	}
-	return int(db_result.RowsAffected), nil
+	rowsAffected := 0
+	service._db.Transaction(func(tx *gorm.DB) error {
+		for _, e := range entities {
+			db_result := service._db.
+				Model(new(T)).
+				Where(service._options.PublicIdColumnName+" = ?", service.GetPublicId(e)).
+				Updates(e)
+			if db_result.Error != nil {
+				return db_result.Error
+			}
+			rowsAffected += int(db_result.RowsAffected)
+		}
+		return nil
+	})	
+	return int(rowsAffected), nil
 }
 
 func (service *CrudServiceImpl[T, TPublicId]) Update(entity *T) (int, error) {

@@ -14,7 +14,7 @@ import (
 type TestContact struct {
 	Id       int
 	FullName string
-	PublicId string
+	PublicId string `gorm:"index:idx_test_contacts_public_id,unique"`
 	Code     int
 	Email    string
 	Phone    string
@@ -22,6 +22,7 @@ type TestContact struct {
 
 var crud_test_db *gorm.DB
 var contactsService CrudService[TestContact, string]
+var crud_test_public_ids []string
 
 func create_and_populate_test_db(seedDataLength int) {
 	dbName := GetRandomStr(5)
@@ -31,6 +32,7 @@ func create_and_populate_test_db(seedDataLength int) {
 	}
 	Db.AutoMigrate(&TestContact{})
 	contacts := make([]TestContact, 0)
+	crud_test_public_ids = make([]string, 0)
 	for i := 0; i < seedDataLength; i++ {
 		istr := strconv.Itoa(i)
 		c := TestContact{
@@ -39,6 +41,7 @@ func create_and_populate_test_db(seedDataLength int) {
 			PublicId: uuid.NewString(),
 		}
 		contacts = append(contacts, c)
+		crud_test_public_ids = append(crud_test_public_ids, c.PublicId)
 	}
 	Db.Create(&contacts)
 	crud_test_db = Db

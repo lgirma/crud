@@ -33,10 +33,11 @@ func AddCrudGinRestApi[T any, TPublicId any](baseUrl string, ginEngine *gin.Engi
 
 	r.GET(baseUrl+"/get/:publicId", func(c *gin.Context) {
 		publicId := c.Param("publicId")
-		// parse public ID
 		result, err := crudService.FindOneByPublicId(Parse[TPublicId](publicId))
 		if err != nil {
 			c.AbortWithError(500, err)
+		} else if result == nil {
+			c.AbortWithError(404, errors.New("not found"))
 		} else {
 			c.JSON(200, result)
 		}
