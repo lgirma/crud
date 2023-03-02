@@ -96,6 +96,7 @@ func (service *CrudServiceImpl[T, TPublicId]) FindAll(criteria *T, filterParam .
 	filter = NormalizeFilter(filter, service._options.DefaultPageSize)
 	db_result := service._db.Model(new(T)).
 		Where(&criteria).
+		Order(GetOrderByQuery(filter)).
 		Limit(filter.Limit).
 		Offset(filter.Page * filter.Limit).
 		Find(&resultList)
@@ -125,6 +126,7 @@ func (service *CrudServiceImpl[T, TPublicId]) FindAllWhere(query string, paramVa
 	filter = NormalizeFilter(filter, service._options.DefaultPageSize)
 	db_result := service._db.Model(new(T)).
 		Where(query, paramValues...).
+		Order(GetOrderByQuery(filter)).
 		Limit(filter.Limit).
 		Offset(filter.Page * filter.Limit).
 		Find(&resultList)

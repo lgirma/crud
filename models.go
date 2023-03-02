@@ -77,3 +77,15 @@ func NormalizeFilter(filter *DataFilter, defaultPageSize int) *DataFilter {
 	}
 	return filter
 }
+
+func GetOrderByQuery(filter *DataFilter) string {
+	result := make([]string, 0)
+	for _, sort := range filter.SortBy {
+		item := sort.Column
+		if sort.Desc {
+			item += " desc"
+		}
+		result = append(result, item)
+	}
+	return strings.Join(result, ",")
+}

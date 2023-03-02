@@ -4,7 +4,7 @@ GET {{Url}}
 
 ###
 
-GET {{Url}}?limit=2&page=3
+GET {{Url}}?limit=2&page=3&sort=full_name:desc
 
 ###
 

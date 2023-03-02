@@ -211,9 +211,10 @@ Then you will have these end-points automatically:
   - [x] Read
   - [x] Update
   - [x] Delete
-- [ ] Sort
+- [x] Sort
 - [x] CRUD Web Api
 - [ ] Custom Filters
 - [ ] Validation
 - [ ] Error handling
   - [ ] Separate 404s and 400s instead of 500
+- [ ] Metadata
