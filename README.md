@@ -12,6 +12,8 @@ Database CRUD operations utility for Go using [gorm](https://gorm.io).
     - [Read](#read)
     - [Update](#update)
     - [Delete](#delete)
+    - [Options](#options)
+  - [REST API](#rest-api)
   - [Features](#features)
 
 ## Installation
@@ -161,12 +163,57 @@ rowsAffected, err := contactRepo.DeleteWher(&Contact{FullName: "Cont-1"})
 contactRepo.DeleteWhere("full_name like ?", "J%")
 ```
 
+### Options
+
+You can supply options struct when creating the CRUD service as:
+
+```go
+contactRepo = crud.NewCrudService(
+  myDbConnection,
+  func(e Contact) string { return e.PublicId },
+  func(t *Contact, a string) { t.PublicId = a },
+  &crud.CrudServiceOptions[Contact, string]{
+    DefaultPageSize: 25,
+    PublicIdColumnName: "uuid",    
+    DisableAutoIdGeneration: true,
+    LookupQuery: "full_name like ? or email like ?",
+  }
+)
+```
+
+## REST API
+
+You can start a REST API for your CRUD service based on gin gonic, as:
+
+```go
+tagsRepo := crud.NewCrudService(/* constructor */)
+r := gin.Default()
+
+// Create a rest api at api/tags end-point for the entity Tag with a public Id of type string
+crud.AddCrudGinRestApi[Tag, string]("api/tags", r, tagsRepo, nil)
+```
+
+Then you will have these end-points automatically:
+
+| End-point | Method | Description | Example URL | Example Body |
+|-----------|--------|-------------|-------------|--------------|
+| `api/tags` | GET | Paginated list | `api/tags` | - |
+| `api/tags` | GET | Paginated list | `api/tags?limit=2&page=3&sort=name:asc,age:desc` | - |
+| `api/tags/:publicId` | GET | Details of a single item | `api/tags/e61bc045` | - |
+| `api/tags/:publicIds` | DELETE | Deletes items with the given public IDs | `api/tags/e61bc045,cb837345` | - |
+| `api/tags` | POST | Creates the given list of items in the body | `api/tags` | `[{"Name": "finance"}, {"Name": "technology"}]` |
+| `api/tags` | PUT | Updates the given list of items in the body | `api/tags` | `[{"Id": "cb837345", "Name": "books"}]` |
+
 ## Features
 
 - [x] CRUD Service
+  - [x] Create
+  - [x] Read
+  - [x] Update
+  - [x] Delete
 - [ ] Sort
 - [x] CRUD Web Api
-- [ ] Filter
+- [ ] Custom Filters
 - [ ] Validation
 - [ ] Error handling
   - [ ] Separate 404s and 400s instead of 500

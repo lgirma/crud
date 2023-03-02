@@ -105,24 +105,6 @@ func TestGetNotFoundApi(t *testing.T) {
 	assert.Equal(t, 404, code)
 }
 
-func TestCreateApi(t *testing.T) {
-	r := setup_test_api()
-	entities := []TestContact{
-		{FullName: "Mother Nature", Email: "mona@gmail.com"},
-	}
-	var rowAdded TestContact
-	code, err := post_req("", r, entities, &rowAdded)
-
-	assert.Equal(t, 200, code)
-	assert.Nil(t, err)
-	assert.NotNil(t, rowAdded)
-	assert.NotEmpty(t, rowAdded.PublicId)
-
-	var totalCount int64
-	crud_test_db.Model(&TestContact{}).Count(&totalCount)
-	assert.Equal(t, int64(seed_data_size+1), totalCount)
-}
-
 func TestCreateBulkApi(t *testing.T) {
 	r := setup_test_api()
 	entities := []TestContact{
@@ -193,50 +175,12 @@ func TestDeleteNotFoundApi(t *testing.T) {
 
 func TestUpdateApi(t *testing.T) {
 	r := setup_test_api()
-	entity := &TestContact{
-		PublicId: crud_test_public_ids[0],
-		FullName: "Mother Nature",
-		Email:    "mona@gmail.com",
-	}
-	rowsAffected := 0
-	code, err := http_req("PUT", crud_test_public_ids[0], r, entity, &rowsAffected)
-
-	assert.Equal(t, 200, code)
-	assert.Nil(t, err)
-	assert.Equal(t, 1, rowsAffected)
-
-	var updatedEntity TestContact
-	crud_test_db.Model(&TestContact{}).Where("public_id = ?", crud_test_public_ids[0]).First(&updatedEntity)
-
-	assert.NotNil(t, updatedEntity)
-	assert.Equal(t, entity.PublicId, updatedEntity.PublicId)
-	assert.Equal(t, entity.FullName, updatedEntity.FullName)
-	assert.Equal(t, entity.Email, updatedEntity.Email)
-}
-
-func TestUpdateNonExistingApi(t *testing.T) {
-	r := setup_test_api()
-	entity := &TestContact{
-		PublicId: "invalid_public_id",
-		FullName: "Mother Nature",
-		Email:    "mona@gmail.com",
-	}
-	rowsAffected := 0
-	code, err := post_req("update", r, entity, &rowsAffected)
-
-	assert.Equal(t, 200, code)
-	assert.Nil(t, err)
-	assert.Equal(t, 0, rowsAffected)
-}
-
-func TestUpdateAllApi(t *testing.T) {
-	r := setup_test_api()
 	entities := []TestContact{
 		{PublicId: crud_test_public_ids[0], FullName: "Mother Nature", Email: "mona1@gmail.com"},
 		{PublicId: crud_test_public_ids[1], FullName: "Father Nature", Email: "fana1@gmail.com"},
 	}
 	rowsAffected := 0
-	code, err := post_req("update-all", r, entities, &rowsAffected)
+	code, err := http_req("PUT", "", r, entities, &rowsAffected)
 
 	assert.Equal(t, 200, code)
 	assert.Nil(t, err)
@@ -260,4 +204,17 @@ func TestUpdateAllApi(t *testing.T) {
 			}
 		}
 	}
+}
+
+func TestUpdateNonExistingApi(t *testing.T) {
+	r := setup_test_api()
+	entities := []TestContact{
+		{PublicId: "non_existing_public_id", FullName: "Mother Nature", Email: "mona1@gmail.com"},		
+	}
+	rowsAffected := 0
+	code, err := http_req("PUT", "", r, entities, &rowsAffected)
+
+	assert.Equal(t, 200, code)
+	assert.Nil(t, err)
+	assert.Zero(t, rowsAffected)	
 }

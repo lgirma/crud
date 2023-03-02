@@ -10,7 +10,7 @@ type Contact struct {
 }
 
 type Tag struct {
-	Id       int
+	Id       int `json:"-"`
 	PublicId string `gorm:"index:idx_tags_public_id,unique"`
 	Name     string
 }
