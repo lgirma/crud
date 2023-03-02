@@ -12,6 +12,7 @@ Database CRUD operations utility for Go using [gorm](https://gorm.io).
     - [Read](#read)
     - [Update](#update)
     - [Delete](#delete)
+  - [Features](#features)
 
 ## Installation
 
@@ -39,10 +40,11 @@ Then create a repository for that entity use the `crud.NewCrudService()` method.
 
 ```go
 // NewCrudService(connection, PK_getter, PK_setter, options)
-contactRepo = crud.NewCrudService(myDbConnection,
-  func(t Contact) any { return t.PublicId },
-  func(t *Contact, s any) { t.PublicId = s.(string) },
-  &crud.CrudServiceOptions{},
+contactRepo = crud.NewCrudService(
+  myDbConnection,
+  func(e Contact) string { return e.PublicId },
+  func(t *Contact, a string) { t.PublicId = a },
+  &crud.CrudServiceOptions[Contact, string]{}
 )
 ```
 
@@ -158,3 +160,13 @@ rowsAffected, err := contactRepo.DeleteWher(&Contact{FullName: "Cont-1"})
 // Equivalent to: DELTE FROM contacts WHERE full_name LIKE 'J%'
 contactRepo.DeleteWhere("full_name like ?", "J%")
 ```
+
+## Features
+
+- [x] CRUD Service
+- [ ] Sort
+- [x] CRUD Web Api
+- [ ] Filter
+- [ ] Validation
+- [ ] Error handling
+  - [ ] Separate 404s and 400s instead of 500

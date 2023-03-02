@@ -93,11 +93,11 @@ func (service *CrudServiceImpl[T, TPublicId]) FindAll(criteria *T, filterParam .
 	if len(filterParam) > 0 {
 		filter = filterParam[0]
 	}
-	filter = normalizeFilter(filter, service._options.DefaultPageSize)
+	filter = NormalizeFilter(filter, service._options.DefaultPageSize)
 	db_result := service._db.Model(new(T)).
 		Where(&criteria).
-		Limit(filter.ItemsPerPage).
-		Offset(filter.CurrentPage * filter.ItemsPerPage).
+		Limit(filter.Limit).
+		Offset(filter.Page * filter.Limit).
 		Find(&resultList)
 	totalCount, err := service.Count(criteria)
 	if db_result.Error != nil {
@@ -122,11 +122,11 @@ func (service *CrudServiceImpl[T, TPublicId]) FindAllWhere(query string, paramVa
 	} else {
 		paramValues = paramValuesAndFilter
 	}
-	filter = normalizeFilter(filter, service._options.DefaultPageSize)
+	filter = NormalizeFilter(filter, service._options.DefaultPageSize)
 	db_result := service._db.Model(new(T)).
 		Where(query, paramValues...).
-		Limit(filter.ItemsPerPage).
-		Offset(filter.CurrentPage * filter.ItemsPerPage).
+		Limit(filter.Limit).
+		Offset(filter.Page * filter.Limit).
 		Find(&resultList)
 	totalCount, err := service.CountWhere(query, paramValues...)
 	if db_result.Error != nil {
@@ -283,7 +283,7 @@ func (service *CrudServiceImpl[T, TPublicId]) UpdateAll(entities []T) (int, erro
 			rowsAffected += int(db_result.RowsAffected)
 		}
 		return nil
-	})	
+	})
 	return int(rowsAffected), nil
 }
 

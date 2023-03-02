@@ -1,19 +1,30 @@
 package crud
 
-import "math"
+import (
+	"math"
+	"strings"
+)
+
+type SortInfo struct {
+	Column string
+	Desc   bool
+}
 
 type DataFilter struct {
-	CurrentPage  int
-	ItemsPerPage int
-	SortBy       []string
+	Page   int    `form:"page"`
+	Limit  int    `form:"limit"`
+	Offset int    `form:"offset"`
+	Sort   string `form:"sort"`
+	SortBy []SortInfo
+	FindBy map[string]any
 }
 
-func Paged(currentPage int, itemsPerPage int) *DataFilter {
-	return &DataFilter{CurrentPage: currentPage, ItemsPerPage: itemsPerPage}
+func Paged(page int, limit int) *DataFilter {
+	return &DataFilter{Page: page, Limit: limit}
 }
 
-func PagedAndSorted(currentPage int, itemsPerPage int, sortBy []string) *DataFilter {
-	return &DataFilter{CurrentPage: currentPage, ItemsPerPage: itemsPerPage, SortBy: sortBy}
+func PagedAndSorted(page int, limit int, sortBy []SortInfo) *DataFilter {
+	return &DataFilter{Page: page, Limit: limit, SortBy: sortBy}
 }
 
 type PagedList[T any] struct {
@@ -28,26 +39,41 @@ type PagedList[T any] struct {
 }
 
 func NewPagedList[T any](list []T, totalCount int, filter *DataFilter) *PagedList[T] {
-	totalPages := int(math.Ceil(float64(totalCount) / float64(filter.ItemsPerPage)))
+	totalPages := int(math.Ceil(float64(totalCount) / float64(filter.Limit)))
 	return &PagedList[T]{
 		List:         list,
 		TotalCount:   totalCount,
-		CurrentPage:  filter.CurrentPage,
-		ItemsPerPage: filter.ItemsPerPage,
-		HasNext:      filter.CurrentPage < totalPages-1,
-		HasPrevious:  filter.CurrentPage != 0,
+		CurrentPage:  filter.Page,
+		ItemsPerPage: filter.Limit,
+		HasNext:      filter.Page < totalPages-1,
+		HasPrevious:  filter.Page != 0,
 		TotalPages:   totalPages,
-		Skip:         filter.CurrentPage * filter.ItemsPerPage,
+		Skip:         filter.Page * filter.Limit,
 	}
 }
 
-func normalizeFilter(filter *DataFilter, defaultPageSize int) *DataFilter {
+func NormalizeFilter(filter *DataFilter, defaultPageSize int) *DataFilter {
 	if filter == nil {
-		filter = &DataFilter{CurrentPage: 0, ItemsPerPage: defaultPageSize}
+		filter = &DataFilter{Page: 0, Limit: defaultPageSize}
 	} else {
-		if filter.ItemsPerPage < 1 {
-			filter.ItemsPerPage = defaultPageSize
+		if filter.Limit < 1 {
+			filter.Limit = defaultPageSize
 		}
+	}
+	if len(filter.Sort) > 0 {
+		sortInfos := strings.Split(filter.Sort, ",")
+		for _, s := range sortInfos {
+			sortSpec := strings.Split(s, ":")
+			sortInfo := SortInfo{Column: sortSpec[0]}
+			if len(sortSpec) > 1 {
+				sortInfo.Desc = strings.ToLower(sortSpec[1]) == "desc"
+			}
+
+			filter.SortBy = append(filter.SortBy, sortInfo)
+		}
+	}
+	if filter.Offset > 0 {
+		filter.Page = filter.Offset / filter.Limit
 	}
 	return filter
 }

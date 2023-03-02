@@ -2,3 +2,4 @@
 .vscode/
 *.db
 dist/
+node_modules/

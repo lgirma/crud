@@ -2,6 +2,8 @@ package crud
 
 import (
 	"errors"
+	"log"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -13,11 +15,7 @@ func AddCrudGinRestApi[T any, TPublicId any](baseUrl string, ginEngine *gin.Engi
 	r := ginEngine
 	listEndPoint := func(c *gin.Context) {
 		var filter DataFilter
-		if c.Request.Method == "POST" {
-			if err := c.ShouldBindJSON(&filter); err != nil {
-				filter = *Paged(0, crudService.GetOptions().DefaultPageSize)
-			}
-		} else {
+		if err := c.ShouldBind(&filter); err != nil {
 			filter = *Paged(0, crudService.GetOptions().DefaultPageSize)
 		}
 		result, err := crudService.GetAll(&filter)
@@ -29,9 +27,8 @@ func AddCrudGinRestApi[T any, TPublicId any](baseUrl string, ginEngine *gin.Engi
 	}
 
 	r.GET(baseUrl, listEndPoint)
-	r.POST(baseUrl, listEndPoint)
 
-	r.GET(baseUrl+"/get/:publicId", func(c *gin.Context) {
+	getOneEndPoint := func(c *gin.Context) {
 		publicId := c.Param("publicId")
 		result, err := crudService.FindOneByPublicId(Parse[TPublicId](publicId))
 		if err != nil {
@@ -41,23 +38,18 @@ func AddCrudGinRestApi[T any, TPublicId any](baseUrl string, ginEngine *gin.Engi
 		} else {
 			c.JSON(200, result)
 		}
-	})
+	}
 
-	r.GET(baseUrl+"/count", func(c *gin.Context) {
-		result, err := crudService.Count()
-		if err != nil {
-			c.AbortWithError(500, err)
-		} else {
-			c.JSON(200, result)
-		}
-	})
+	r.GET(baseUrl+"/:publicId", getOneEndPoint)
 
-	r.POST(baseUrl+"/create", func(c *gin.Context) {
-		var entity T
-		if err := c.ShouldBindJSON(&entity); err != nil {
+	r.POST(baseUrl, func(c *gin.Context) {
+		var entities []T
+		if err := c.ShouldBindJSON(&entities); err != nil {
 			c.AbortWithError(400, errors.New("invalid data to create"))
+			log.Printf("failed to bind create data: %v", err)
+			return
 		}
-		result, err := crudService.Create(&entity)
+		result, err := crudService.CreateAll(entities)
 		if err != nil {
 			c.AbortWithError(500, err)
 		} else {
@@ -65,20 +57,7 @@ func AddCrudGinRestApi[T any, TPublicId any](baseUrl string, ginEngine *gin.Engi
 		}
 	})
 
-	r.POST(baseUrl+"/update", func(c *gin.Context) {
-		var entity T
-		if err := c.ShouldBindJSON(&entity); err != nil {
-			c.AbortWithError(400, errors.New("invalid data to create"))
-		}
-		result, err := crudService.Update(&entity)
-		if err != nil {
-			c.AbortWithError(500, err)
-		} else {
-			c.JSON(200, result)
-		}
-	})
-
-	r.POST(baseUrl+"/update-all", func(c *gin.Context) {
+	r.PUT(baseUrl, func(c *gin.Context) {
 		var entities []T
 		if err := c.ShouldBindJSON(&entities); err != nil {
 			c.AbortWithError(400, errors.New("invalid data to create"))
@@ -91,34 +70,9 @@ func AddCrudGinRestApi[T any, TPublicId any](baseUrl string, ginEngine *gin.Engi
 		}
 	})
 
-	r.POST(baseUrl+"/create-all", func(c *gin.Context) {
-		var entities []T
-		if err := c.ShouldBindJSON(&entities); err != nil {
-			c.AbortWithError(400, errors.New("invalid data to create"))
-		}
-		result, err := crudService.CreateAll(entities)
-		if err != nil {
-			c.AbortWithError(500, err)
-		} else {
-			c.JSON(200, result)
-		}
-	})
-
-	r.GET(baseUrl+"/delete/:publicId", func(c *gin.Context) {
-		publicId := c.Param("publicId")
-		result, err := crudService.DeleteByPublicId(Parse[TPublicId](publicId))
-		if err != nil {
-			c.AbortWithError(500, err)
-		} else {
-			c.JSON(200, result)
-		}
-	})
-
-	r.POST(baseUrl+"/delete-all", func(c *gin.Context) {
-		var publicIdStrings []string
-		if err := c.ShouldBindJSON(&publicIdStrings); err != nil {
-			c.AbortWithError(400, errors.New("invalid list of public IDs"))
-		}
+	r.DELETE(baseUrl+"/:publicIds", func(c *gin.Context) {
+		publicIdSrc := c.Param("publicIds")
+		publicIdStrings := strings.Split(publicIdSrc, ",")
 		publicIds := make([]TPublicId, 0)
 		for _, v := range publicIdStrings {
 			publicIds = append(publicIds, Parse[TPublicId](v))

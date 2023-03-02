@@ -29,7 +29,7 @@ func CORSMiddleware() gin.HandlerFunc {
 		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
-		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT")
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE")
 
 		if c.Request.Method == "OPTIONS" {
 			c.AbortWithStatus(204)
@@ -63,6 +63,8 @@ func main() {
 			LookupQuery: "name like ?",
 		},
 	)
+
+	r.GET("", func(c *gin.Context) { c.String(200, "Running Ok") })
 
 	crud.AddCrudGinRestApi[Contact, string]("api/contacts", r, contactsRepo, &crud.CrudRestApiOptions[Contact, string]{})
 	crud.AddCrudGinRestApi[Tag, string]("api/tags", r, tagsRepo, &crud.CrudRestApiOptions[Tag, string]{})
