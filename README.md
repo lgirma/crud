@@ -218,3 +218,4 @@ Then you will have these end-points automatically:
 - [ ] Error handling
   - [ ] Separate 404s and 400s instead of 500
 - [ ] Metadata
+- [ ] Consistent casing: snake, camel

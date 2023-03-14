@@ -28,27 +28,27 @@ func PagedAndSorted(page int, limit int, sortBy []SortInfo) *DataFilter {
 }
 
 type PagedList[T any] struct {
-	List         []T
-	TotalCount   int
-	CurrentPage  int
-	ItemsPerPage int
-	HasNext      bool
-	HasPrevious  bool
-	TotalPages   int
-	Skip         int
+	List        []T  `json:"list"`
+	TotalCount  int  `json:"totalCount"`
+	Page        int  `json:"page"`
+	Limit       int  `json:"limit"`
+	HasNext     bool `json:"hasNext"`
+	HasPrevious bool `json:"hasPrevious"`
+	TotalPages  int  `json:"totalPages"`
+	Skip        int  `json:"skip"`
 }
 
 func NewPagedList[T any](list []T, totalCount int, filter *DataFilter) *PagedList[T] {
 	totalPages := int(math.Ceil(float64(totalCount) / float64(filter.Limit)))
 	return &PagedList[T]{
-		List:         list,
-		TotalCount:   totalCount,
-		CurrentPage:  filter.Page,
-		ItemsPerPage: filter.Limit,
-		HasNext:      filter.Page < totalPages-1,
-		HasPrevious:  filter.Page != 0,
-		TotalPages:   totalPages,
-		Skip:         filter.Page * filter.Limit,
+		List:        list,
+		TotalCount:  totalCount,
+		Page:        filter.Page,
+		Limit:       filter.Limit,
+		HasNext:     filter.Page < totalPages-1,
+		HasPrevious: filter.Page != 0,
+		TotalPages:  totalPages,
+		Skip:        filter.Page * filter.Limit,
 	}
 }
 
@@ -88,4 +88,13 @@ func GetOrderByQuery(filter *DataFilter) string {
 		result = append(result, item)
 	}
 	return strings.Join(result, ",")
+}
+
+type CrudMetadata struct {
+	List   any
+	Detail any
+	Create any
+	Update any
+	Find   any
+	SortBy []string
 }

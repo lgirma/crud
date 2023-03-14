@@ -70,7 +70,7 @@ func TestDefaultListApi(t *testing.T) {
 	assert.Equal(t, 200, code)
 	assert.Nil(t, err)
 	assert.NotNil(t, result)
-	assert.Zero(t, result.CurrentPage)
+	assert.Zero(t, result.Page)
 	assert.Len(t, result.List, contactsService.GetOptions().DefaultPageSize)
 }
 
@@ -82,7 +82,7 @@ func TestPagedListApi(t *testing.T) {
 	assert.Equal(t, 200, code)
 	assert.Nil(t, err)
 	assert.NotNil(t, result)
-	assert.Equal(t, 1, result.CurrentPage)
+	assert.Equal(t, 1, result.Page)
 	assert.Len(t, result.List, 7)
 }
 
@@ -209,12 +209,12 @@ func TestUpdateApi(t *testing.T) {
 func TestUpdateNonExistingApi(t *testing.T) {
 	r := setup_test_api()
 	entities := []TestContact{
-		{PublicId: "non_existing_public_id", FullName: "Mother Nature", Email: "mona1@gmail.com"},		
+		{PublicId: "non_existing_public_id", FullName: "Mother Nature", Email: "mona1@gmail.com"},
 	}
 	rowsAffected := 0
 	code, err := http_req("PUT", "", r, entities, &rowsAffected)
 
 	assert.Equal(t, 200, code)
 	assert.Nil(t, err)
-	assert.Zero(t, rowsAffected)	
+	assert.Zero(t, rowsAffected)
 }
